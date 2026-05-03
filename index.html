@@ -2,8 +2,11 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#fbf4e8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="取票码">
 <title>电影取票码生成器</title>
 <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
@@ -50,12 +53,12 @@
     --shsm:0 1px 2px oklch(0 0 0/.3);--shmd:0 4px 16px oklch(0 0 0/.4);--shlg:0 12px 40px oklch(0 0 0/.55);
   }}
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-  html{-webkit-text-size-adjust:none;-webkit-font-smoothing:antialiased;scroll-behavior:smooth}
+  html{width:100%;max-width:100%;overflow-x:hidden;-webkit-text-size-adjust:none;-webkit-font-smoothing:antialiased;scroll-behavior:smooth;overscroll-behavior-x:none}
   body{min-height:100dvh;font-family:var(--fn);font-size:var(--bs);color:var(--tx);
     background:
       linear-gradient(115deg,transparent 0 58%,color-mix(in oklab,var(--gold) 18%,transparent) 58% 58.4%,transparent 58.4%),
       linear-gradient(180deg,color-mix(in oklab,var(--surf) 82%,var(--goldlo)) 0%,var(--bg) 44%,color-mix(in oklab,var(--prilo) 34%,var(--bg)) 100%);
-    display:flex;flex-direction:column;align-items:center;position:relative;overflow-x:hidden;isolation:isolate;
+    width:100%;max-width:100vw;display:flex;flex-direction:column;align-items:center;position:relative;overflow-x:hidden;isolation:isolate;touch-action:pan-y manipulation;overscroll-behavior-x:none;
     padding:var(--s8) var(--s4) var(--s8);transition:background var(--tr),color var(--tr)}
   body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
     background:
@@ -423,6 +426,14 @@
 </div>
 
 <script>
+// ---- iOS Viewport Lock ----
+document.addEventListener('gesturestart', function(e){ e.preventDefault(); }, {passive:false});
+document.addEventListener('gesturechange', function(e){ e.preventDefault(); }, {passive:false});
+document.addEventListener('gestureend', function(e){ e.preventDefault(); }, {passive:false});
+document.addEventListener('touchmove', function(e){
+  if(e.scale && e.scale !== 1) e.preventDefault();
+}, {passive:false});
+
 // ---- Theme ----
 (function(){
   var btn=document.getElementById('themeBtn'),html=document.documentElement;
