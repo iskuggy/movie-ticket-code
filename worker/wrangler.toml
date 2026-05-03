@@ -1,0 +1,7 @@
+name = "movie-ticket-deepseek-proxy"
+main = "src/index.js"
+compatibility_date = "2026-05-03"
+
+[vars]
+ALLOWED_ORIGIN = "https://iskuggy.github.io"
+DEEPSEEK_MODEL = "deepseek-v4-flash"

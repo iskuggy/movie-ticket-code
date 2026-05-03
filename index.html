@@ -323,11 +323,11 @@
 
     <button class="ai-config-btn" id="ai-config-btn" onclick="toggleAIConfig()" aria-expanded="false" aria-controls="ai-settings">
       <span class="ai-config-left">
-        <span>DeepSeek 配置</span>
+        <span>DeepSeek 云端解析</span>
         <span class="model-pill">deepseek-v4-flash</span>
       </span>
       <span class="ai-config-meta">
-        <span>API Key</span>
+        <span>已托管</span>
         <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
       </span>
     </button>
@@ -335,18 +335,11 @@
     <!-- AI Settings -->
     <div class="ai-settings" id="ai-settings">
       <div class="ai-hdr">
-        <div class="ai-hdr-title">AI 配置</div>
+        <div class="ai-hdr-title">AI 云端代理</div>
         <div class="ai-hdr-note">DeepSeek · deepseek-v4-flash</div>
       </div>
-      <div class="fg ai-api-wrap" style="margin-bottom:var(--s4)">
-        <label>API Key</label>
-        <input type="text" id="ai-key" class="key-mask" placeholder="DeepSeek API Key" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore="true" data-lpignore="true" data-form-type="other">
-        <button class="eye-btn" onclick="toggleKey()" aria-label="显示/隐藏">
-          <svg id="eye-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-        </button>
-      </div>
       <div class="ai-note">
-        填入 DeepSeek API Key 即可。密钥只在当前页面内存中使用，关闭页面即清除。
+        DeepSeek API Key 已保存在 Cloudflare Worker Secret 中，不会暴露在网页源码里。
       </div>
     </div>
 
@@ -447,8 +440,7 @@ function switchTab(name,el){
 }
 
 // ---- AI Settings ----
-var DEEPSEEK_BASE_URL='https://api.deepseek.com/v1';
-var DEEPSEEK_MODEL='deepseek-v4-flash';
+var AI_PROXY_URL='https://movie-ticket-deepseek-proxy.skuggy3860.workers.dev/parse';
 
 function toggleAI(on){
   var btn=document.getElementById('ai-config-btn');
@@ -468,14 +460,6 @@ function toggleAIConfig(forceOpen){
   panel.classList.toggle('on', open);
   btn.classList.toggle('expanded', open);
   btn.setAttribute('aria-expanded', open?'true':'false');
-}
-
-function toggleKey(){
-  var inp=document.getElementById('ai-key');
-  var masked=inp.classList.toggle('key-mask');
-  document.getElementById('eye-icon').innerHTML=masked
-    ?'<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>'
-    :'<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
 }
 
 // ---- Local Regex Parser ----
@@ -499,39 +483,19 @@ function parseLocal(text){
 
 // ---- AI Parser ----
 async function parseWithAI(text){
-  var key=document.getElementById('ai-key').value.trim();
-  if(!key){
-    toggleAIConfig(true);
-    throw new Error('请先填写 DeepSeek API Key');
-  }
-
-  var prompt='从下面的电影订单通知文本中提取信息，严格按照 JSON 格式返回，不要有任何多余文字。\n\n'
-    +'返回格式：{"movie":"电影名","cinema":"影院名","time":"场次时间","seat":"座位信息","code":"取票码"}\n\n'
-    +'如果某个字段找不到，对应值填空字符串""。取票码通常是一串数字。\n\n'
-    +'原文：\n'+text;
-
-  var resp=await fetch(DEEPSEEK_BASE_URL+'/chat/completions',{
+  var resp=await fetch(AI_PROXY_URL,{
     method:'POST',
-    headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
-    body:JSON.stringify({
-      model:DEEPSEEK_MODEL,
-      messages:[{role:'user',content:prompt}],
-      temperature:0,
-      max_tokens:256
-    })
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({text:text})
   });
 
   if(!resp.ok){
-    var errBody=await resp.text();
-    throw new Error('API 错误 '+resp.status+': '+errBody.slice(0,200));
+    var errData;
+    try{errData=await resp.json();}catch(e){errData={error:await resp.text()};}
+    throw new Error((errData.error||'AI 代理错误')+' ('+resp.status+')');
   }
 
-  var data=await resp.json();
-  var content=data.choices[0].message.content.trim();
-  // Extract JSON from markdown code block if present
-  var jsonMatch=content.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if(jsonMatch) content=jsonMatch[1].trim();
-  return JSON.parse(content);
+  return await resp.json();
 }
 
 // ---- Smart Generate ----
