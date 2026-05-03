@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>电影取票码生成器</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=DM+Sans:wght@400;500;600&family=Press+Start+2P&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<style>
+  :root,[data-theme="light"]{
+    --bg:#fbf4e8;--surf:#fffaf1;--surf2:#fffef9;--surfoff:#f3eadb;
+    --border:#ddcdb8;--div:#ead9c3;
+    --tx:#25211b;--txm:#756a5c;--txf:#ad9d89;
+    --pri:#08737c;--prih:#04535e;--prilo:#d7e9e7;
+    --gold:#bd8d35;--goldlo:#f7dfad;--rose:#d86552;--ink:#173139;
+    --suc:#537c2d;--suclo:#dce8cf;--err:#b33868;
+    --shsm:0 2px 8px oklch(0.42 0.04 70/.08);
+    --shmd:0 12px 34px oklch(0.42 0.04 70/.12);
+    --shlg:0 22px 60px oklch(0.38 0.04 70/.18);
+    --r1:.375rem;--r2:.5rem;--r3:.75rem;--r4:1rem;--r5:1.5rem;--rf:9999px;
+    --fn:"Noto Sans SC","DM Sans",sans-serif;
+    --xs:clamp(.75rem,.7rem + .25vw,.875rem);--sm:clamp(.875rem,.8rem + .35vw,1rem);
+    --bs:clamp(1rem,.95rem + .25vw,1.125rem);--lg:clamp(1.125rem,1rem + .75vw,1.5rem);
+    --s1:.25rem;--s2:.5rem;--s3:.75rem;--s4:1rem;--s5:1.25rem;--s6:1.5rem;--s8:2rem;
+    --tr:180ms cubic-bezier(.16,1,.3,1);
+  }
+  [data-theme="dark"]{
+    --bg:#101616;--surf:#171d1c;--surf2:#1d2422;--surfoff:#222720;
+    --border:#3e473e;--div:#2d342f;
+    --tx:#eee6d7;--txm:#b2a896;--txf:#746d62;
+    --pri:#6fc4bd;--prih:#46a7a4;--prilo:#253d3a;
+    --gold:#d2a64e;--goldlo:#4a3c21;--rose:#e17462;--ink:#0b2024;
+    --suc:#93bf62;--suclo:#31412a;--err:#e1729b;
+    --shsm:0 1px 2px oklch(0 0 0/.3);--shmd:0 4px 16px oklch(0 0 0/.4);--shlg:0 12px 40px oklch(0 0 0/.55);
+  }
+  @media(prefers-color-scheme:dark){:root:not([data-theme]){
+    --bg:#101616;--surf:#171d1c;--surf2:#1d2422;--surfoff:#222720;
+    --border:#3e473e;--div:#2d342f;
+    --tx:#eee6d7;--txm:#b2a896;--txf:#746d62;
+    --pri:#6fc4bd;--prih:#46a7a4;--prilo:#253d3a;
+    --gold:#d2a64e;--goldlo:#4a3c21;--rose:#e17462;--ink:#0b2024;
+    --suc:#93bf62;--suclo:#31412a;--err:#e1729b;
+    --shsm:0 1px 2px oklch(0 0 0/.3);--shmd:0 4px 16px oklch(0 0 0/.4);--shlg:0 12px 40px oklch(0 0 0/.55);
+  }}
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:none;-webkit-font-smoothing:antialiased;scroll-behavior:smooth}
+  body{min-height:100dvh;font-family:var(--fn);font-size:var(--bs);color:var(--tx);
+    background:
+      linear-gradient(115deg,transparent 0 58%,color-mix(in oklab,var(--gold) 18%,transparent) 58% 58.4%,transparent 58.4%),
+      linear-gradient(180deg,color-mix(in oklab,var(--surf) 82%,var(--goldlo)) 0%,var(--bg) 44%,color-mix(in oklab,var(--prilo) 34%,var(--bg)) 100%);
+    display:flex;flex-direction:column;align-items:center;position:relative;overflow-x:hidden;isolation:isolate;
+    padding:var(--s8) var(--s4) var(--s8);transition:background var(--tr),color var(--tr)}
+  body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+    background:
+      radial-gradient(circle at 16px 16px,color-mix(in oklab,var(--ink) 10%,transparent) 0 2px,transparent 2.5px) left 26px top 32px/52px 52px repeat-y,
+      radial-gradient(circle at 16px 16px,color-mix(in oklab,var(--ink) 10%,transparent) 0 2px,transparent 2.5px) right 26px top 32px/52px 52px repeat-y;
+    opacity:.72}
+  body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+    background:
+      linear-gradient(90deg,color-mix(in oklab,var(--rose) 16%,transparent),transparent 30% 70%,color-mix(in oklab,var(--pri) 14%,transparent)),
+      repeating-linear-gradient(135deg,transparent 0 18px,color-mix(in oklab,var(--tx) 5%,transparent) 18px 19px);
+    mix-blend-mode:multiply;opacity:.32}
+
+  /* header */
+  header{width:100%;max-width:520px;display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--s8);position:relative;z-index:1}
+  header::after{content:'';position:absolute;left:0;bottom:-14px;width:96px;height:3px;
+    background:linear-gradient(90deg,var(--gold),var(--rose),transparent);border-radius:var(--rf)}
+  .logo{display:flex;align-items:center;gap:var(--s2);font-size:var(--sm);font-weight:700;color:var(--tx);letter-spacing:-.01em}
+  .logo svg{color:var(--pri)}
+  .theme-btn{width:36px;height:36px;border-radius:var(--rf);background:color-mix(in oklab,var(--surf2) 76%,var(--goldlo));
+    border:1px solid oklch(from var(--tx) l c h/.1);display:flex;align-items:center;justify-content:center;
+    cursor:pointer;color:var(--txm);transition:background var(--tr),color var(--tr)}
+  .theme-btn:hover{background:var(--div);color:var(--tx)}
+
+  /* card */
+  .card{width:100%;max-width:520px;background:
+      linear-gradient(180deg,color-mix(in oklab,var(--surf2) 78%,var(--goldlo)) 0%,var(--surf) 36%,var(--surf) 100%);
+    border:1px solid color-mix(in oklab,var(--border) 78%,var(--gold));
+    border-radius:var(--r5);box-shadow:var(--shmd);overflow:hidden;position:relative;z-index:1}
+  .card::before{content:'';position:absolute;inset:0 0 auto;height:5px;
+    background:linear-gradient(90deg,var(--pri),var(--gold),var(--rose));pointer-events:none}
+  .card::after{content:'';position:absolute;right:18px;top:18px;width:42px;height:42px;pointer-events:none;opacity:.26;
+    background:
+      linear-gradient(var(--gold),var(--gold)) center/100% 1px no-repeat,
+      linear-gradient(90deg,var(--gold),var(--gold)) center/1px 100% no-repeat;
+    transform:rotate(45deg)}
+
+  /* tabs */
+  .tabs{display:flex;border-bottom:1px solid var(--div);background:color-mix(in oklab,var(--surf2) 68%,var(--surfoff))}
+  .tab{flex:1;padding:var(--s4) var(--s3);font-family:var(--fn);font-size:var(--xs);font-weight:500;
+    color:var(--txm);background:none;border:none;cursor:pointer;
+    border-bottom:2px solid transparent;margin-bottom:-1px;
+    transition:color var(--tr),border-color var(--tr),background var(--tr)}
+  .tab:hover{color:var(--tx);background:var(--surfoff)}
+  .tab.on{color:var(--pri);border-bottom-color:var(--gold);font-weight:600;background:color-mix(in oklab,var(--goldlo) 22%,transparent)}
+  .panel{padding:var(--s8);display:none}.panel.on{display:block}
+
+  /* form elements */
+  .fg{margin-bottom:var(--s5)}
+  label{display:block;font-size:var(--sm);font-weight:500;color:var(--txm);margin-bottom:var(--s2)}
+  .lnote{font-weight:400;color:var(--txf);font-size:.85em}
+  input[type=text],select,textarea{
+    width:100%;padding:var(--s3) var(--s4);font-family:var(--fn);font-size:var(--sm);
+    color:var(--tx);background:linear-gradient(180deg,var(--surf2),color-mix(in oklab,var(--surf2) 82%,var(--goldlo)));
+    border:1px solid var(--border);
+    border-radius:var(--r2);outline:none;transition:border-color var(--tr),box-shadow var(--tr)}
+  input::placeholder,textarea::placeholder{color:var(--txf)}
+  textarea{min-height:110px;resize:vertical;line-height:1.6;
+    background:
+      repeating-linear-gradient(180deg,transparent 0 31px,color-mix(in oklab,var(--gold) 11%,transparent) 31px 32px),
+      linear-gradient(180deg,var(--surf2),color-mix(in oklab,var(--surf2) 86%,var(--goldlo)))}
+  input:focus,select:focus,textarea:focus{
+    border-color:var(--pri);box-shadow:0 0 0 3px oklch(from var(--pri) l c h/.16),0 0 0 6px color-mix(in oklab,var(--gold) 12%,transparent)}
+  select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237a7974' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right var(--s3) center;padding-right:var(--s8);cursor:pointer}
+  .errmsg{font-size:var(--xs);color:var(--err);margin-top:var(--s1);display:none}
+  .errmsg.on{display:block}
+
+  /* buttons */
+  .btn{width:100%;padding:var(--s3) var(--s6);font-family:var(--fn);font-size:var(--sm);font-weight:600;
+    color:#fff;background:linear-gradient(135deg,var(--pri),color-mix(in oklab,var(--pri) 72%,var(--ink)));
+    border:none;border-radius:var(--r2);cursor:pointer;
+    margin-top:var(--s2);transition:background var(--tr),transform var(--tr),box-shadow var(--tr);
+    display:flex;align-items:center;justify-content:center;gap:var(--s2)}
+  .btn:hover{background:linear-gradient(135deg,var(--prih),color-mix(in oklab,var(--prih) 72%,var(--ink)));box-shadow:var(--shsm)}
+  .btn:active{transform:scale(.98)}
+  .btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+  /* parse result */
+  .parse-box{margin-top:var(--s4);background:linear-gradient(180deg,color-mix(in oklab,var(--surfoff) 80%,var(--goldlo)),var(--surfoff));
+    border:1px solid oklch(from var(--tx) l c h/.07);border-radius:var(--r3);padding:var(--s4);display:none}
+  .parse-box.on{display:block}
+  .parse-title{font-size:var(--xs);font-weight:600;color:var(--txm);letter-spacing:.05em;
+    text-transform:uppercase;margin-bottom:var(--s3)}
+  .pfields{display:flex;flex-direction:column;gap:var(--s2)}
+  .pfield{display:flex;align-items:flex-start;gap:var(--s3);font-size:var(--sm)}
+  .pkey{color:var(--txf);font-size:var(--xs);min-width:52px;padding-top:2px;flex-shrink:0}
+  .pval{color:var(--tx);font-weight:500;flex:1;word-break:break-all}
+  .pval.miss{color:var(--err);font-weight:400;font-style:italic}
+  .bok{display:inline-block;font-size:10px;font-weight:600;background:var(--suclo);color:var(--suc);
+    padding:1px 7px;border-radius:var(--rf);margin-left:var(--s2)}
+  .bwarn{display:inline-block;font-size:10px;font-weight:600;
+    background:color-mix(in oklab,var(--err) 12%,var(--surf));color:var(--err);
+    padding:1px 7px;border-radius:var(--rf);margin-left:var(--s2)}
+
+  /* AI settings panel */
+  .ai-settings{background:var(--surfoff);border:1px solid oklch(from var(--tx) l c h/.07);
+    border-radius:var(--r3);padding:var(--s6);margin-top:var(--s5);display:none}
+  .ai-settings.on{display:block}
+  .ai-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--s4)}
+  .ai-hdr-title{font-size:var(--sm);font-weight:600;color:var(--tx)}
+  .ai-hdr-note{font-size:var(--xs);color:var(--txf)}
+  .ai-row{display:grid;grid-template-columns:1fr 1fr;gap:var(--s3);margin-bottom:var(--s3)}
+  .ai-api-wrap{position:relative}
+  .ai-api-wrap input{min-height:48px;padding-right:calc(var(--s8) + var(--s3));font-family:"Courier New",monospace;font-size:15px}
+  .key-mask{-webkit-text-security:disc}
+  .eye-btn{position:absolute;right:var(--s3);top:50%;transform:translateY(-50%);
+    background:none;border:none;cursor:pointer;color:var(--txm);padding:var(--s1);
+    display:flex;align-items:center}
+  .ai-toggle-row{display:flex;align-items:center;gap:var(--s3);margin-bottom:var(--s4)}
+  .toggle-label{font-size:var(--sm);color:var(--txm);cursor:pointer;user-select:none}
+  .ai-config-btn{width:100%;display:none;align-items:center;justify-content:space-between;
+    gap:var(--s3);padding:var(--s3) var(--s4);margin-bottom:var(--s3);
+    color:var(--tx);background:var(--surf2);border:1px solid var(--border);
+    border-radius:var(--r2);font-family:var(--fn);font-size:var(--sm);font-weight:600;
+    cursor:pointer;transition:border-color var(--tr),background var(--tr),box-shadow var(--tr)}
+  .ai-config-btn.on{display:flex}
+  .ai-config-btn:hover{border-color:var(--pri);box-shadow:var(--shsm)}
+  .ai-config-left{display:flex;align-items:center;gap:var(--s2);min-width:0}
+  .ai-config-meta{display:flex;align-items:center;gap:var(--s2);color:var(--txm);
+    font-size:var(--xs);font-weight:500;min-width:0}
+  .model-pill{display:inline-flex;align-items:center;max-width:170px;padding:2px 8px;
+    border-radius:var(--rf);background:var(--prilo);color:var(--pri);
+    font-family:"Courier New",monospace;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .chev{flex-shrink:0;transition:transform var(--tr);color:var(--txm)}
+  .ai-config-btn.expanded .chev{transform:rotate(180deg)}
+  /* toggle switch */
+  .switch{position:relative;width:40px;height:22px;flex-shrink:0}
+  .switch input{opacity:0;width:0;height:0;position:absolute}
+  .slider{position:absolute;inset:0;background:var(--border);border-radius:var(--rf);
+    cursor:pointer;transition:background var(--tr)}
+  .slider:before{content:'';position:absolute;width:16px;height:16px;left:3px;top:3px;
+    background:#fff;border-radius:50%;transition:transform var(--tr)}
+  input:checked + .slider{background:var(--pri)}
+  input:checked + .slider:before{transform:translateX(18px)}
+  .ai-note{font-size:var(--xs);color:var(--txf);line-height:1.6;padding:var(--s3);
+    background:color-mix(in oklab,var(--pri) 8%,var(--surf));
+    border-radius:var(--r2);border-left:2px solid var(--pri)}
+  .spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);
+    border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* divider */
+  .hdiv{height:1px;background:var(--div);margin:var(--s8) 0;display:none}
+
+  /* result */
+  #result{display:none;flex-direction:column;align-items:center;gap:var(--s4)}
+  #result.on{display:flex}
+
+  /* ticket */
+  .ticket{width:100%;background:#faf6ef;
+    border:1px solid rgba(184,151,74,.2);border-radius:var(--r4);
+    overflow:hidden;box-shadow:var(--shlg);position:relative}
+  .ticket::before{content:'';position:absolute;left:0;right:0;top:-5px;height:10px;
+    background:radial-gradient(circle at center,transparent 4px,#faf6ef 5px);
+    background-size:16px 10px;background-repeat:repeat-x;z-index:3;pointer-events:none}
+  .ticket::after{content:'';position:absolute;left:0;right:0;bottom:-5px;height:10px;
+    background:radial-gradient(circle at center,transparent 4px,#faf6ef 5px);
+    background-size:16px 10px;background-repeat:repeat-x;z-index:3;pointer-events:none}
+  .t-head{background:linear-gradient(135deg,#3d3630,#302a24 55%,#24201a);
+    padding:var(--s5) var(--s6);display:flex;flex-direction:column;gap:var(--s1);position:relative}
+  .t-head::before{content:'';position:absolute;left:16px;top:24px;bottom:24px;width:3px;
+    background:#c9a84c;border-radius:2px;opacity:.85}
+  .t-head::after{content:'CINEMA\APASS';position:absolute;right:22px;top:20px;
+    font-size:11px;font-weight:700;color:rgba(201,168,76,.45);letter-spacing:.2em;
+    line-height:1.7;text-align:center;white-space:pre}
+  .t-movie{font-size:var(--lg);font-weight:700;color:#fff;letter-spacing:-.02em;line-height:1.25;padding-left:14px}
+  .t-cinema{font-size:var(--xs);color:#a08040;padding-left:14px}
+  .t-meta{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #e0d8cc;background:#f5f0e6}
+  .t-mi{padding:var(--s4) var(--s5);border-right:1px solid #ddd5c8;display:flex;flex-direction:column;gap:var(--s1)}
+  .t-mi:nth-child(even){border-right:none}
+  .mlabel{font-size:9px;font-weight:600;color:#b0a080;letter-spacing:.12em;text-transform:uppercase}
+  .mval{font-size:var(--sm);font-weight:600;color:#1a1a1a;line-height:1.3}
+  .perf{display:flex;align-items:center;background:#f5f0e6;padding:12px var(--s5)}
+  .perf-c{width:20px;height:20px;border-radius:50%;background:#faf6ef;
+    border:1px solid oklch(from var(--tx) l c h/.08);flex-shrink:0}
+  .perf-l{flex:1;height:1px;background:repeating-linear-gradient(to right,#c9a84c 0,#c9a84c 5px,transparent 5px,transparent 11px);opacity:.55}
+  .perf-badge{display:flex;align-items:center;justify-content:center;width:44px;height:44px;
+    border-radius:50%;background:#faf6ef;border:1.5px solid #c9a84c;flex-shrink:0;margin:0 var(--s2)}
+  .perf-badge-inner{width:36px;height:36px;border-radius:50%;border:1px solid rgba(201,168,76,.15);
+    display:flex;align-items:center;justify-content:center}
+  .perf-txt{font-family:'DM Sans',sans-serif;font-size:7px;color:#8a7d6b;font-weight:600;letter-spacing:.15em;text-transform:uppercase;white-space:nowrap}
+  .t-qr{padding:var(--s6);display:flex;flex-direction:column;align-items:center;gap:var(--s4);background:#faf6ef}
+  .qlabel{font-size:var(--xs);color:#9a9286;letter-spacing:.07em;text-transform:uppercase;font-weight:500}
+  #qrc{border-radius:var(--r2);overflow:hidden;line-height:0;padding:10px;background:#fff;border:1px solid rgba(184,151,74,.2);box-shadow:var(--shsm);position:relative}
+  #qrc::before{content:'';position:absolute;inset:8px;pointer-events:none;z-index:2;
+    background:
+      linear-gradient(#c9a84c,#c9a84c) left top/18px 2px no-repeat,
+      linear-gradient(#c9a84c,#c9a84c) left top/2px 18px no-repeat,
+      linear-gradient(#c9a84c,#c9a84c) right top/18px 2px no-repeat,
+      linear-gradient(#c9a84c,#c9a84c) right top/2px 18px no-repeat,
+      linear-gradient(#c9a84c,#c9a84c) left bottom/18px 2px no-repeat,
+      linear-gradient(#c9a84c,#c9a84c) left bottom/2px 18px no-repeat,
+      linear-gradient(#c9a84c,#c9a84c) right bottom/18px 2px no-repeat,
+      linear-gradient(#c9a84c,#c9a84c) right bottom/2px 18px no-repeat}
+  #qrc canvas,#qrc img{display:block}
+  .tnum{font-size:var(--xs);color:var(--txm);font-family:"Courier New",monospace;
+    letter-spacing:.1em;background:var(--surfoff);padding:var(--s1) var(--s4);border-radius:var(--rf)}
+  .t-bottom{background:#f5f0e6;padding:var(--s5);display:flex;flex-direction:column;align-items:center;gap:var(--s3);position:relative}
+  .t-bottom::before{content:'';position:absolute;left:0;right:0;top:-5px;height:10px;
+    background:radial-gradient(circle at center,transparent 4px,#f5f0e6 5px);
+    background-size:16px 10px;background-repeat:repeat-x;z-index:3;pointer-events:none}
+  .ticket-code{max-width:100%;display:flex;align-items:center;justify-content:center;gap:3px;row-gap:6px;flex-wrap:wrap;
+    padding:9px 14px;background:#f3eee4;border-radius:16px;color:#1a1a1a;
+    box-shadow:inset 0 0 0 1px rgba(184,151,74,.08);overflow:hidden}
+  .dot-digit{display:grid;grid-template-columns:repeat(5,2.5px);grid-template-rows:repeat(7,2.5px);gap:2px;flex:0 0 auto}
+  .dot-cell{width:2.5px;height:2.5px;border-radius:50%;background:transparent}
+  .dot-cell.on{background:#1a1a1a}
+  .dot-fallback{font-family:"Courier New","DM Sans",monospace;font-size:28px;font-weight:700;letter-spacing:.12em;line-height:1}
+  .t-credit{font-size:10px;color:#b0a080;letter-spacing:.1em;font-weight:500;align-self:flex-end;margin-top:6px;margin-right:4px}
+  .acts{display:flex;gap:var(--s3);width:100%}
+  .abtn{flex:1;padding:var(--s3) var(--s4);font-family:var(--fn);font-size:var(--sm);font-weight:500;
+    color:var(--pri);background:linear-gradient(180deg,color-mix(in oklab,var(--prilo) 88%,var(--goldlo)),var(--prilo));border:none;border-radius:var(--r2);cursor:pointer;
+    text-align:center;transition:filter var(--tr),transform var(--tr)}
+  .abtn:hover{filter:brightness(.9)}.abtn:active{transform:scale(.97)}
+  .save-output{width:100%;display:none;gap:var(--s3);align-items:center;background:var(--surf2);
+    border:1px solid var(--border);border-radius:var(--r3);padding:var(--s3);box-shadow:var(--shsm)}
+  .save-output.on{display:flex}
+  .save-output img{width:74px;height:96px;object-fit:cover;border-radius:var(--r2);border:1px solid var(--div);background:#fff}
+  .save-output-info{min-width:0;flex:1}
+  .save-output-title{font-size:var(--sm);font-weight:600;color:var(--tx);margin-bottom:2px}
+  .save-output-note{font-size:var(--xs);color:var(--txm);line-height:1.5}
+  .save-output-link{font-size:var(--xs);font-weight:600;color:var(--pri);text-decoration:none}
+  .hint{font-size:var(--xs);color:var(--txf);text-align:center;line-height:1.8}
+
+  @media(max-width:420px){
+    body{padding:var(--s5) var(--s3) var(--s8)}
+    .panel{padding:var(--s6)}
+    .ai-row{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 2v5M8 2v5M2 12h20"/>
+    </svg>
+    电影取票码生成器
+  </div>
+  <button class="theme-btn" id="themeBtn" aria-label="切换主题">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+  </button>
+</header>
+
+<div class="card">
+  <div class="tabs">
+    <button class="tab on" onclick="switchTab('smart',this)">✨ 智能识别</button>
+    <button class="tab" onclick="switchTab('manual',this)">✏️ 手动填写</button>
+  </div>
+
+  <!-- Smart Tab -->
+  <div class="panel on" id="tab-smart">
+    <div style="font-size:var(--sm);font-weight:600;color:var(--tx);margin-bottom:var(--s2)">粘贴取票通知</div>
+    <div style="font-size:var(--xs);color:var(--txm);margin-bottom:var(--s4);line-height:1.6">
+      支持猫眼、淘票票、福汇、博纳等各平台订单通知。<br>
+      默认使用本地正则识别；开启 AI 模式可获得更准确的结果。
+    </div>
+    <div class="fg" style="margin-bottom:var(--s3)">
+      <textarea id="smart-input" placeholder="粘贴取票通知"></textarea>
+    </div>
+
+    <!-- AI mode toggle -->
+    <div class="ai-toggle-row">
+        <label class="switch">
+        <input type="checkbox" id="ai-toggle" onchange="toggleAI(this.checked)">
+        <span class="slider"></span>
+      </label>
+      <label for="ai-toggle" class="toggle-label">🤖 使用 AI 智能解析（更准确）</label>
+    </div>
+
+    <button class="ai-config-btn" id="ai-config-btn" onclick="toggleAIConfig()" aria-expanded="false" aria-controls="ai-settings">
+      <span class="ai-config-left">
+        <span>DeepSeek 配置</span>
+        <span class="model-pill">deepseek-v4-flash</span>
+      </span>
+      <span class="ai-config-meta">
+        <span>API Key</span>
+        <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+      </span>
+    </button>
+
+    <!-- AI Settings -->
+    <div class="ai-settings" id="ai-settings">
+      <div class="ai-hdr">
+        <div class="ai-hdr-title">AI 配置</div>
+        <div class="ai-hdr-note">DeepSeek · deepseek-v4-flash</div>
+      </div>
+      <div class="fg ai-api-wrap" style="margin-bottom:var(--s4)">
+        <label>API Key</label>
+        <input type="text" id="ai-key" class="key-mask" placeholder="DeepSeek API Key" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore="true" data-lpignore="true" data-form-type="other">
+        <button class="eye-btn" onclick="toggleKey()" aria-label="显示/隐藏">
+          <svg id="eye-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+      <div class="ai-note">
+        填入 DeepSeek API Key 即可。密钥只在当前页面内存中使用，关闭页面即清除。
+      </div>
+    </div>
+
+    <!-- Parse result -->
+    <div class="parse-box" id="parse-box">
+      <div class="parse-title" id="parse-title">识别结果</div>
+      <div class="pfields" id="pfields"></div>
+    </div>
+
+    <button class="btn" style="margin-top:var(--s5)" id="smart-btn" onclick="smartGen()">
+      <span id="smart-btn-text">识别并生成取票码</span>
+    </button>
+  </div>
+
+  <!-- Manual Tab -->
+  <div class="panel" id="tab-manual">
+    <div class="fg"><label for="m-movie">电影名称 <span class="lnote">（票面顶部显示）</span></label>
+      <input type="text" id="m-movie" placeholder="例：寒战1994" maxlength="40"></div>
+    <div class="fg"><label for="m-cinema">影院 <span class="lnote">（选填）</span></label>
+      <input type="text" id="m-cinema" placeholder="例：博纳国际影城（南京江北IMAX店）" maxlength="80"></div>
+    <div class="fg"><label for="m-time">场次时间 <span class="lnote">（选填）</span></label>
+      <input type="text" id="m-time" placeholder="例：2026-05-02 19:15" maxlength="40"></div>
+    <div class="fg"><label for="m-seat">座位 <span class="lnote">（选填）</span></label>
+      <input type="text" id="m-seat" placeholder="例：2号厅 7排1座" maxlength="60"></div>
+    <div class="fg"><label for="m-code">取票编号 <span style="color:var(--err);font-size:.85em">*</span></label>
+      <input type="text" id="m-code" placeholder="输入取票码或订单号" maxlength="100">
+      <div class="errmsg" id="m-err">请输入取票编号</div></div>
+    <button class="btn" onclick="manualGen()">生成取票码</button>
+  </div>
+
+  <div style="padding:0 var(--s8) var(--s8)">
+    <div class="hdiv" id="hdiv"></div>
+    <div id="result">
+      <div class="ticket">
+        <div class="t-head">
+          <div class="t-movie" id="r-movie"></div>
+          <div class="t-cinema" id="r-cinema"></div>
+        </div>
+        <div class="t-meta" id="t-meta">
+          <div class="t-mi"><div class="mlabel">场次时间</div><div class="mval" id="r-time"></div></div>
+          <div class="t-mi"><div class="mlabel">座位</div><div class="mval" id="r-seat"></div></div>
+        </div>
+        <div class="perf">
+          <div class="perf-c"></div><div class="perf-l"></div>
+          <div class="perf-badge">
+            <div class="perf-badge-inner">
+              <span class="perf-txt">CODE</span>
+            </div>
+          </div>
+          <div class="perf-l"></div><div class="perf-c"></div>
+        </div>
+        <div class="t-qr">
+          <div class="qlabel">请对准取票机扫描</div>
+          <div id="qrc"></div>
+        </div>
+        <div class="t-bottom">
+          <div class="ticket-code" id="r-code"></div>
+          <div class="t-credit">Powered by DeepSeek</div>
+        </div>
+      </div>
+      <div class="acts">
+        <button class="abtn" onclick="saveTicket()">📥 保存高清票面</button>
+        <button class="abtn" onclick="resetAll()">↩ 重新生成</button>
+      </div>
+      <div class="save-output" id="save-output" aria-live="polite">
+        <img id="save-preview" alt="高清票面预览">
+        <div class="save-output-info">
+          <div class="save-output-title">高清票面已生成</div>
+          <div class="save-output-note">如果浏览器没有自动下载，请打开图片后手动保存。</div>
+          <a class="save-output-link" id="save-link" target="_blank" rel="noopener">打开高清图片</a>
+        </div>
+      </div>
+      <p class="hint">将屏幕亮度调至最高以确保扫码成功<br>加密取票码请直接使用官方 App</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---- Theme ----
+(function(){
+  var btn=document.getElementById('themeBtn'),html=document.documentElement;
+  var d=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';
+  html.setAttribute('data-theme',d); setIcon();
+  btn.addEventListener('click',function(){
+    d=d==='dark'?'light':'dark'; html.setAttribute('data-theme',d); setIcon();
+    if(document.getElementById('result').classList.contains('on')) regenQR();
+  });
+  function setIcon(){btn.innerHTML=d==='dark'
+    ?'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>'
+    :'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';}
+})();
+
+// ---- Tab ----
+function switchTab(name,el){
+  document.querySelectorAll('.tab').forEach(function(b){b.classList.remove('on')});
+  document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('on')});
+  el.classList.add('on'); document.getElementById('tab-'+name).classList.add('on');
+}
+
+// ---- AI Settings ----
+var DEEPSEEK_BASE_URL='https://api.deepseek.com/v1';
+var DEEPSEEK_MODEL='deepseek-v4-flash';
+
+function toggleAI(on){
+  var btn=document.getElementById('ai-config-btn');
+  var panel=document.getElementById('ai-settings');
+  btn.classList.toggle('on', on);
+  if(!on){
+    panel.classList.remove('on');
+    btn.classList.remove('expanded');
+    btn.setAttribute('aria-expanded','false');
+  }
+}
+
+function toggleAIConfig(forceOpen){
+  var panel=document.getElementById('ai-settings');
+  var btn=document.getElementById('ai-config-btn');
+  var open=typeof forceOpen==='boolean'?forceOpen:!panel.classList.contains('on');
+  panel.classList.toggle('on', open);
+  btn.classList.toggle('expanded', open);
+  btn.setAttribute('aria-expanded', open?'true':'false');
+}
+
+function toggleKey(){
+  var inp=document.getElementById('ai-key');
+  var masked=inp.classList.toggle('key-mask');
+  document.getElementById('eye-icon').innerHTML=masked
+    ?'<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>'
+    :'<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
+}
+
+// ---- Local Regex Parser ----
+function parseLocal(text){
+  var r={movie:'',cinema:'',time:'',seat:'',code:''};
+  var m;
+  m=text.match(/《([^》]+)》/); if(m) r.movie=m[1].trim();
+  var tps=[/(\d{4}[-\/年]\d{1,2}[-\/月]\d{1,2}[日\s]*\s*\d{1,2}:\d{2})/,/(\d{1,2}月\d{1,2}日\s*\d{1,2}:\d{2})/];
+  for(var i=0;i<tps.length;i++){m=text.match(tps[i]);if(m){r.time=m[1].replace(/年|月/g,'-').replace(/日/g,'').trim();break;}}
+  var cps=[/取票码[：:]\s*(\d{6,})/,/验证码[：:]\s*(\d{6,})/,/兑换码[：:]\s*([A-Z0-9]{6,})/i,/订单号[：:]\s*([A-Z0-9]{8,})/i];
+  for(var i=0;i<cps.length;i++){m=text.match(cps[i]);if(m){r.code=m[1].trim();break;}}
+  if(!r.code){m=text.match(/\b(\d{12,20})\b/);if(m)r.code=m[1];}
+  m=text.match(/(\d+号厅)[（(](\d+排\d+座)[)）]/);
+  if(m){r.seat=m[1]+' '+m[2];}
+  else{var sps=[/(\d+号厅\s*\d+排\d+座)/,/(\d+排\d+座)/,/([A-Z]\d+排?\d+座)/];
+    for(var i=0;i<sps.length;i++){m=text.match(sps[i]);if(m){r.seat=m[1].trim();break;}}}
+  var eps=[/(\S{2,25}(?:影城|影院|电影城)[（(][^)）]{2,20}[)）])/,/(\S{2,20}(?:影城|影院|电影城)[^，,。\n]{0,10})/];
+  for(var i=0;i<eps.length;i++){m=text.match(eps[i]);if(m){r.cinema=m[1].trim();break;}}
+  return r;
+}
+
+// ---- AI Parser ----
+async function parseWithAI(text){
+  var key=document.getElementById('ai-key').value.trim();
+  if(!key){
+    toggleAIConfig(true);
+    throw new Error('请先填写 DeepSeek API Key');
+  }
+
+  var prompt='从下面的电影订单通知文本中提取信息，严格按照 JSON 格式返回，不要有任何多余文字。\n\n'
+    +'返回格式：{"movie":"电影名","cinema":"影院名","time":"场次时间","seat":"座位信息","code":"取票码"}\n\n'
+    +'如果某个字段找不到，对应值填空字符串""。取票码通常是一串数字。\n\n'
+    +'原文：\n'+text;
+
+  var resp=await fetch(DEEPSEEK_BASE_URL+'/chat/completions',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+    body:JSON.stringify({
+      model:DEEPSEEK_MODEL,
+      messages:[{role:'user',content:prompt}],
+      temperature:0,
+      max_tokens:256
+    })
+  });
+
+  if(!resp.ok){
+    var errBody=await resp.text();
+    throw new Error('API 错误 '+resp.status+': '+errBody.slice(0,200));
+  }
+
+  var data=await resp.json();
+  var content=data.choices[0].message.content.trim();
+  // Extract JSON from markdown code block if present
+  var jsonMatch=content.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if(jsonMatch) content=jsonMatch[1].trim();
+  return JSON.parse(content);
+}
+
+// ---- Smart Generate ----
+async function smartGen(){
+  var text=document.getElementById('smart-input').value.trim();
+  if(!text){alert('请先粘贴订单通知文本');return;}
+  var useAI=document.getElementById('ai-toggle').checked;
+  var btn=document.getElementById('smart-btn');
+  var btnTxt=document.getElementById('smart-btn-text');
+
+  btn.disabled=true;
+  btnTxt.innerHTML=useAI?'<span class="spin"></span> AI 解析中…':'识别中…';
+
+  var d;
+  var source='正则识别';
+  try{
+    if(useAI){
+      d=await parseWithAI(text);
+      source='AI 解析';
+    } else {
+      d=parseLocal(text);
+    }
+  } catch(e){
+    btn.disabled=false; btnTxt.textContent='识别并生成取票码';
+    alert('解析失败：'+e.message);
+    return;
+  }
+
+  btn.disabled=false; btnTxt.textContent='识别并生成取票码';
+
+  // Show results
+  var box=document.getElementById('parse-box'),fl=document.getElementById('pfields');
+  box.classList.add('on');
+  document.getElementById('parse-title').textContent='识别结果（'+source+'）';
+  var rows=[{k:'电影名',v:d.movie},{k:'影院',v:d.cinema},{k:'时间',v:d.time},{k:'座位',v:d.seat},{k:'取票码',v:d.code}];
+  fl.innerHTML=rows.map(function(r){
+    var ok=r.v?'<span class="bok">✓</span>':'<span class="bwarn">未识别</span>';
+    return '<div class="pfield"><div class="pkey">'+r.k+'</div>'
+      +'<div class="pval'+(r.v?'':' miss')+'">'+(r.v||'未识别')+ok+'</div></div>';
+  }).join('');
+
+  if(!d.code){alert('未能识别取票码，请切换到「手动填写」模式');return;}
+  renderTicket(d.movie||'电影票',d.cinema||'',d.time||'',d.seat||'',d.code);
+}
+
+// ---- Manual Generate ----
+function manualGen(){
+  var code=document.getElementById('m-code').value.trim();
+  var err=document.getElementById('m-err');
+  if(!code){err.classList.add('on');document.getElementById('m-code').focus();return;}
+  err.classList.remove('on');
+  renderTicket(
+    document.getElementById('m-movie').value.trim()||'电影票',
+    document.getElementById('m-cinema').value.trim(),
+    document.getElementById('m-time').value.trim(),
+    document.getElementById('m-seat').value.trim(),
+    code
+  );
+}
+
+// ---- Render Ticket ----
+var curCode='';
+var DOT_DIGITS = {
+  '0': ['01110','10001','10011','10101','11001','10001','01110'],
+  '1': ['00100','01100','00100','00100','00100','00100','01110'],
+  '2': ['01110','10001','00001','00010','00100','01000','11111'],
+  '3': ['11110','00001','00001','01110','00001','00001','11110'],
+  '4': ['00010','00110','01010','10010','11111','00010','00010'],
+  '5': ['11111','10000','10000','11110','00001','00001','11110'],
+  '6': ['01110','10000','10000','11110','10001','10001','01110'],
+  '7': ['11111','00001','00010','00100','01000','01000','01000'],
+  '8': ['01110','10001','10001','01110','10001','10001','01110'],
+  '9': ['01110','10001','10001','01111','00001','00001','01110']
+};
+
+function renderDotCode(code){
+  var el=document.getElementById('r-code');
+  el.dataset.code=code;
+  el.innerHTML='';
+  String(code).split('').forEach(function(ch){
+    var pat=DOT_DIGITS[ch];
+    if(!pat){
+      var fb=document.createElement('span');
+      fb.className='dot-fallback';
+      fb.textContent=ch;
+      el.appendChild(fb);
+      return;
+    }
+    var digit=document.createElement('span');
+    digit.className='dot-digit';
+    digit.setAttribute('aria-label', ch);
+    pat.join('').split('').forEach(function(bit){
+      var cell=document.createElement('span');
+      cell.className='dot-cell'+(bit==='1'?' on':'');
+      digit.appendChild(cell);
+    });
+    el.appendChild(digit);
+  });
+}
+
+function renderTicket(movie,cinema,time,seat,code){
+  curCode=code;
+  document.getElementById('r-movie').textContent=movie;
+  var ce=document.getElementById('r-cinema'); ce.textContent=cinema; ce.style.display=cinema?'':'none';
+  document.getElementById('r-time').textContent=time||'—';
+  document.getElementById('r-seat').textContent=seat||'—';
+  renderDotCode(code);
+  document.getElementById('t-meta').style.display=(time||seat)?'':'none';
+  document.getElementById('qrc').innerHTML='';
+  new QRCode(document.getElementById('qrc'),{text:code,width:210,height:210,
+    colorDark:'#111111',colorLight:'#ffffff',
+    correctLevel:QRCode.CorrectLevel.M});
+  document.getElementById('hdiv').style.display='';
+  document.getElementById('result').classList.add('on');
+  setTimeout(function(){document.getElementById('result').scrollIntoView({behavior:'smooth',block:'nearest'});},150);
+}
+
+function regenQR(){
+  if(!curCode)return;
+  document.getElementById('qrc').innerHTML='';
+  new QRCode(document.getElementById('qrc'),{text:curCode,width:210,height:210,
+    colorDark:'#111111',colorLight:'#ffffff',
+    correctLevel:QRCode.CorrectLevel.M});
+}
+
+// ---- Save Ticket ----
+function drawRoundRect(ctx,x,y,w,h,r){
+  var rr=Math.min(r,w/2,h/2);
+  ctx.beginPath();
+  ctx.moveTo(x+rr,y);
+  ctx.arcTo(x+w,y,x+w,y+h,rr);
+  ctx.arcTo(x+w,y+h,x,y+h,rr);
+  ctx.arcTo(x,y+h,x,y,rr);
+  ctx.arcTo(x,y,x+w,y,rr);
+  ctx.closePath();
+}
+
+function ellipsize(ctx,text,maxWidth){
+  text=String(text||'');
+  if(ctx.measureText(text).width<=maxWidth) return text;
+  var out=text;
+  while(out.length>1&&ctx.measureText(out+'…').width>maxWidth) out=out.slice(0,-1);
+  return out+'…';
+}
+
+function wrapText(ctx,text,maxWidth,maxLines){
+  var lines=[],line='',chars=String(text||'').split('');
+  for(var i=0;i<chars.length;i++){
+    var test=line+chars[i];
+    if(ctx.measureText(test).width>maxWidth&&line){
+      lines.push(line);
+      if(lines.length===maxLines-1){
+        line=chars.slice(i).join('');
+        break;
+      }
+      line=chars[i];
+    }else line=test;
+  }
+  if(line) lines.push(line);
+  if(lines.length>maxLines) lines=lines.slice(0,maxLines);
+  if(chars.join('')!==lines.join('')) lines[lines.length-1]=ellipsize(ctx,lines[lines.length-1],maxWidth);
+  return lines;
+}
+
+function makeQRCanvas(code,size){
+  var holder=document.createElement('div');
+  holder.style.cssText='position:fixed;left:-9999px;top:-9999px;width:'+size+'px;height:'+size+'px';
+  document.body.appendChild(holder);
+  new QRCode(holder,{text:code,width:size,height:size,colorDark:'#111111',colorLight:'#ffffff',
+    correctLevel:QRCode.CorrectLevel.M});
+  var c=document.createElement('canvas'); c.width=size; c.height=size;
+  var cx=c.getContext('2d');
+  cx.fillStyle='#fff'; cx.fillRect(0,0,size,size);
+  var src=holder.querySelector('canvas'), img=holder.querySelector('img');
+  if(src) cx.drawImage(src,0,0,size,size);
+  else if(img) cx.drawImage(img,0,0,size,size);
+  holder.remove();
+  return c;
+}
+
+function canvasToFile(canvas,filename){
+  try{
+    var dataUrl=canvas.toDataURL('image/png');
+    var output=document.getElementById('save-output');
+    var preview=document.getElementById('save-preview');
+    var link=document.getElementById('save-link');
+    if(output&&preview&&link){
+      preview.src=dataUrl;
+      link.href=dataUrl;
+      link.download=filename;
+      output.classList.add('on');
+    }
+    var a=document.createElement('a');
+    a.download=filename;
+    a.href=dataUrl;
+    a.style.display='none';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function(){
+      if(output) output.scrollIntoView({behavior:'smooth',block:'nearest'});
+    },80);
+  }catch(e){
+    console.error(e);
+    alert('保存失败：'+(e&&e.message?e.message:'浏览器阻止了下载'));
+  }
+}
+
+// ---- Heritage Ticket Drawing ----
+
+function drawTicketShape(ctx, x, y, w, h, cornerR, perfR, perfGap) {
+  ctx.beginPath();
+  ctx.moveTo(x + cornerR, y);
+  ctx.lineTo(x + w - cornerR, y);
+  ctx.arcTo(x + w, y, x + w, y + h, cornerR);
+  ctx.lineTo(x + w, y + h - cornerR);
+  ctx.arcTo(x + w, y + h, x, y + h, cornerR);
+  ctx.lineTo(x + cornerR, y + h);
+  ctx.arcTo(x, y + h, x, y, cornerR);
+  ctx.lineTo(x, y + cornerR);
+  ctx.arcTo(x, y, x + w, y, cornerR);
+  ctx.closePath();
+  ctx.fill();
+  ctx.save();
+  ctx.globalCompositeOperation = 'destination-out';
+  var perfStep = perfR * 2 + perfGap;
+  var perfCount = Math.floor((w - cornerR * 2) / perfStep);
+  var perfOffset = x + (w - perfCount * perfStep) / 2 + perfStep / 2;
+  for (var i = 0; i < perfCount; i++) {
+    var px = perfOffset + i * perfStep;
+    ctx.beginPath(); ctx.arc(px, y, perfR, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(px, y + h, perfR, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawFineGrain(ctx, W, H) {
+  ctx.save();
+  for (var i = 0; i < 5000; i++) {
+    var xx = (i * 137) % W;
+    var yy = (i * 263) % H;
+    var a = ((i % 5) + 1) / 600;
+    ctx.fillStyle = 'rgba(50,42,32,' + a + ')';
+    ctx.fillRect(xx, yy, 1, 1);
+  }
+  ctx.restore();
+}
+
+function drawCornerMarks(ctx, x, y, w, h, len, color, lw) {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = lw || 3;
+  ctx.lineCap = 'round';
+  var inset = 5;
+  var offsets = [
+    [inset, inset, 1, 0, 0, 1],
+    [w - inset, inset, -1, 0, 0, 1],
+    [inset, h - inset, 1, 0, 0, -1],
+    [w - inset, h - inset, -1, 0, 0, -1]
+  ];
+  offsets.forEach(function(o) {
+    var ox = x + o[0], oy = y + o[1];
+    var dx1 = o[2] * len, dy1 = o[3] * len;
+    var dx2 = o[4] * len, dy2 = o[5] * len;
+    ctx.beginPath();
+    ctx.moveTo(ox + dx1, oy);
+    ctx.lineTo(ox, oy);
+    ctx.lineTo(ox, oy + dy2);
+    ctx.stroke();
+  });
+  ctx.restore();
+}
+
+function drawDashedLine(ctx, x1, y1, x2, y2, dash, gap, color, lw) {
+  var dx = x2 - x1, dy = y2 - y1;
+  var dist = Math.sqrt(dx * dx + dy * dy);
+  var steps = Math.floor(dist / (dash + gap));
+  var ux = dx / dist, uy = dy / dist;
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = lw || 2;
+  ctx.lineCap = 'round';
+  for (var i = 0; i < steps; i++) {
+    var sx = x1 + i * (dash + gap) * ux;
+    var sy = y1 + i * (dash + gap) * uy;
+    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + dash * ux, sy + dash * uy); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function measureDotCode(text, dot, gap, digitGap) {
+  var w = 0;
+  String(text || '').split('').forEach(function(ch, idx) {
+    w += DOT_DIGITS[ch] ? (5 * dot + 4 * gap) : (dot * 5 + gap * 4);
+    if (idx < String(text || '').length - 1) w += digitGap;
+  });
+  return w;
+}
+
+function drawTicketCode(ctx, x, y, maxW, text, color) {
+  text = String(text || '');
+  var dot = 5, gap = 3.5, digitGap = 8;
+  while (measureDotCode(text, dot, gap, digitGap) > maxW && dot > 5) {
+    dot -= 1;
+    gap = Math.max(4, gap - .6);
+    digitGap = Math.max(8, digitGap - 1);
+  }
+  var codeW = measureDotCode(text, dot, gap, digitGap);
+  var codeH = 7 * dot + 6 * gap;
+  var startX = x + (maxW - codeW) / 2;
+
+  ctx.save();
+  drawRoundRect(ctx, x, y - 22, maxW, codeH + 44, 36);
+  ctx.fillStyle = '#f3eee4';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(184,151,74,0.08)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+
+  String(text).split('').forEach(function(ch) {
+    var pat = DOT_DIGITS[ch];
+    if (pat) {
+      pat.forEach(function(row, r) {
+        row.split('').forEach(function(bit, c) {
+          if (bit === '1') {
+            ctx.beginPath();
+            ctx.arc(startX + c * (dot + gap) + dot / 2, y + r * (dot + gap) + dot / 2, dot / 2, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        });
+      });
+    } else {
+      ctx.font = '700 ' + Math.round(codeH * .62) + 'px "Courier New","DM Sans",monospace';
+      ctx.fillText(ch, startX, y + codeH * .14);
+    }
+    startX += (5 * dot + 4 * gap) + digitGap;
+  });
+  ctx.restore();
+}
+
+function saveTicket() {
+  try{
+  var codeEl = document.getElementById('r-code');
+  var code = codeEl.dataset.code || codeEl.textContent;
+  if (!code) { alert('请先生成取票码'); return; }
+  var movie = document.getElementById('r-movie').textContent || '电影票';
+  var cinema = document.getElementById('r-cinema').textContent;
+  var time = document.getElementById('r-time').textContent;
+  var seat = document.getElementById('r-seat').textContent;
+  var hasT = time && time !== '—', hasS = seat && seat !== '—';
+
+  var W = 1242;
+  var ticketPad = 100;
+  var ticketW = W - ticketPad * 2;
+  var pad = 65;
+  var cornerR = 22;
+  var perfR = 5.5, perfGap = 9;
+
+  var tmp = document.createElement('canvas'), tctx = tmp.getContext('2d');
+  tctx.font = '800 62px "Noto Sans SC",sans-serif';
+  var movieLines = wrapText(tctx, movie, ticketW - pad * 2, 2);
+  tctx.font = '400 26px "Noto Sans SC",sans-serif';
+  var cinemaLines = cinema ? wrapText(tctx, cinema, ticketW - pad * 2, 2) : [];
+  var headH = 130 + movieLines.length * 76 + (cinemaLines.length ? cinemaLines.length * 38 + 16 : 0);
+
+  var infoH = (hasT || hasS) ? 185 : 0;
+  var perfH = 85;
+  var qrSize = 470;
+  var qrPlate = qrSize + 70;
+  var qrH = qrPlate + 185;
+  var bottomH = 190;
+  var ticketH = headH + infoH + perfH + qrH + bottomH;
+  var ticketY = 100;
+  var H = ticketH + ticketY * 2;
+
+  var out = document.createElement('canvas');
+  out.width = W; out.height = H;
+  var ctx = out.getContext('2d');
+
+  // ===== BACKGROUND =====
+  ctx.fillStyle = '#e5e0d6';
+  ctx.fillRect(0, 0, W, H);
+  var bgGrad = ctx.createRadialGradient(W / 2, H / 2, 60, W / 2, H / 2, W * 0.7);
+  bgGrad.addColorStop(0, '#ede8df');
+  bgGrad.addColorStop(1, '#dbd6cc');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  // ===== TICKET SHADOW =====
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.18)';
+  ctx.shadowBlur = 50;
+  ctx.shadowOffsetY = 24;
+  drawRoundRect(ctx, ticketPad, ticketY, ticketW, ticketH, cornerR);
+  ctx.fillStyle = 'rgba(0,0,0,0.15)';
+  ctx.fill();
+  ctx.restore();
+
+  // ===== TICKET BODY =====
+  ctx.fillStyle = '#faf6ef';
+  drawRoundRect(ctx, ticketPad, ticketY, ticketW, ticketH, cornerR);
+  ctx.fill();
+
+  // Paper grain
+  ctx.save();
+  ctx.beginPath();
+  drawRoundRect(ctx, ticketPad, ticketY, ticketW, ticketH, cornerR);
+  ctx.closePath();
+  ctx.clip();
+  drawFineGrain(ctx, W, H);
+  ctx.restore();
+
+  // ===== PERFORATIONS =====
+  var perfStep = perfR * 2 + perfGap;
+  var perfCount = Math.floor((ticketW - 50) / perfStep);
+  var startX = ticketPad + (ticketW - perfCount * perfStep) / 2 + perfStep / 2;
+
+  ctx.save();
+  ctx.globalCompositeOperation = 'destination-out';
+  for (var i = 0; i < perfCount; i++) {
+    var pxx = startX + i * perfStep;
+    ctx.beginPath(); ctx.arc(pxx, ticketY, perfR, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(pxx, ticketY + ticketH, perfR, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+
+  // Ticket border
+  ctx.save();
+  ctx.beginPath();
+  drawRoundRect(ctx, ticketPad, ticketY, ticketW, ticketH, cornerR);
+  ctx.closePath();
+  ctx.strokeStyle = 'rgba(184,151,74,0.2)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.restore();
+
+  var y = ticketY;
+
+  // ===== HEADER =====
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(ticketPad + cornerR, y);
+  ctx.lineTo(ticketPad + ticketW - cornerR, y);
+  ctx.arcTo(ticketPad + ticketW, y, ticketPad + ticketW, y + headH, cornerR);
+  ctx.lineTo(ticketPad + ticketW, y + headH);
+  ctx.lineTo(ticketPad, y + headH);
+  ctx.lineTo(ticketPad, y + cornerR);
+  ctx.arcTo(ticketPad, y, ticketPad + ticketW, y, cornerR);
+  ctx.closePath();
+  ctx.clip();
+
+  var hGrad = ctx.createLinearGradient(ticketPad, y, ticketPad + ticketW, y + headH);
+  hGrad.addColorStop(0, '#3d3630');
+  hGrad.addColorStop(0.55, '#302a24');
+  hGrad.addColorStop(1, '#24201a');
+  ctx.fillStyle = hGrad;
+  ctx.fillRect(ticketPad, y, ticketW, headH);
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+  ctx.lineWidth = 1;
+  for (var gx = ticketPad - 200; gx < ticketPad + ticketW + 200; gx += 50) {
+    ctx.beginPath(); ctx.moveTo(gx, y); ctx.lineTo(gx + 280, y + headH); ctx.stroke();
+  }
+  ctx.restore();
+
+  // Gold accent
+  ctx.fillStyle = '#c9a84c';
+  ctx.fillRect(ticketPad + 45, y + 32, 3, headH - 64);
+
+  // Movie title
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '800 62px "Noto Sans SC",sans-serif';
+  ctx.textAlign = 'left';
+  var ty = y + 92;
+  movieLines.forEach(function(line) {
+    ctx.fillText(line, ticketPad + pad + 18, ty);
+    ty += 76;
+  });
+
+  // Cinema
+  if (cinemaLines.length) {
+    ctx.fillStyle = '#a08040';
+    ctx.font = '400 26px "Noto Sans SC",sans-serif';
+    ty += 8;
+    cinemaLines.forEach(function(line) {
+      ctx.fillText(line, ticketPad + pad + 18, ty);
+      ty += 38;
+    });
+  }
+
+  // CINEMA PASS mark
+  ctx.fillStyle = 'rgba(201,168,76,0.45)';
+  ctx.font = '700 22px "DM Sans",sans-serif';
+  ctx.textAlign = 'center';
+  ctx.letterSpacing = '0px';
+  ctx.fillText('CINEMA', ticketPad + ticketW - 110, y + 52);
+  ctx.fillText('PASS', ticketPad + ticketW - 110, y + 88);
+
+  y += headH;
+
+  // ===== INFO SECTION =====
+  if (infoH > 0) {
+    ctx.fillStyle = '#f5f0e6';
+    ctx.fillRect(ticketPad, y, ticketW, infoH);
+
+    ctx.beginPath();
+    ctx.moveTo(ticketPad + 35, y + infoH - 1);
+    ctx.lineTo(ticketPad + ticketW - 35, y + infoH - 1);
+    ctx.strokeStyle = '#e0d8cc';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    var items = [];
+    if (hasT) items.push({l: 'DATE & TIME', v: time});
+    if (hasS) items.push({l: 'SEAT NO.', v: seat});
+
+    if (items.length === 2) {
+      ctx.beginPath();
+      ctx.moveTo(ticketPad + ticketW / 2, y + 36);
+      ctx.lineTo(ticketPad + ticketW / 2, y + infoH - 36);
+      ctx.strokeStyle = '#ddd5c8';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    items.forEach(function(item, i) {
+      var colW = items.length === 1 ? ticketW - pad * 2 : ticketW / 2 - pad * 1.5;
+      var ix = items.length === 1 ? ticketPad + pad : (i === 0 ? ticketPad + pad : ticketPad + ticketW / 2 + pad / 2);
+
+      ctx.fillStyle = '#b0a080';
+      ctx.font = '600 13px "DM Sans",sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(item.l, ix, y + 50);
+
+      ctx.fillStyle = '#1a1a1a';
+      ctx.font = '700 34px "Noto Sans SC",sans-serif';
+      ctx.fillText(ellipsize(ctx, item.v, colW), ix, y + 100);
+    });
+
+    y += infoH;
+  }
+
+  // ===== PERFORATION DIVIDER =====
+  ctx.fillStyle = '#f5f0e6';
+  ctx.fillRect(ticketPad, y, ticketW, perfH);
+
+  var dashY = y + perfH / 2;
+  drawDashedLine(ctx, ticketPad + 55, dashY, ticketPad + ticketW / 2 - 65, dashY, 5, 7, '#c9a84c', 2);
+  drawDashedLine(ctx, ticketPad + ticketW / 2 + 65, dashY, ticketPad + ticketW - 55, dashY, 5, 7, '#c9a84c', 2);
+
+  var badgeR = 28;
+  ctx.beginPath(); ctx.arc(ticketPad + ticketW / 2, dashY, badgeR, 0, Math.PI * 2);
+  ctx.fillStyle = '#faf6ef'; ctx.fill();
+  ctx.strokeStyle = '#c9a84c'; ctx.lineWidth = 2; ctx.stroke();
+
+  ctx.beginPath(); ctx.arc(ticketPad + ticketW / 2, dashY, badgeR - 5, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(201,168,76,0.18)'; ctx.lineWidth = 1; ctx.stroke();
+
+  ctx.fillStyle = '#8a7d6b';
+  ctx.font = '700 10px "DM Sans",sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('CODE', ticketPad + ticketW / 2, dashY + 4);
+
+  y += perfH;
+
+  // ===== QR SECTION =====
+  ctx.fillStyle = '#faf6ef';
+  ctx.fillRect(ticketPad, y, ticketW, qrH);
+
+  ctx.fillStyle = '#9a9080';
+  ctx.font = '500 20px "Noto Sans SC",sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('请对准取票机扫描', ticketPad + ticketW / 2, y + 48);
+
+  var px = ticketPad + ticketW / 2 - qrPlate / 2;
+  var py = y + 76;
+
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.05)';
+  ctx.shadowBlur = 28;
+  ctx.shadowOffsetY = 10;
+  drawRoundRect(ctx, px, py, qrPlate, qrPlate, 22);
+  ctx.fillStyle = '#ffffff';
+  ctx.fill();
+  ctx.restore();
+
+  drawRoundRect(ctx, px, py, qrPlate, qrPlate, 22);
+  ctx.strokeStyle = 'rgba(184,151,74,0.15)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  drawCornerMarks(ctx, px, py, qrPlate, qrPlate, 36, '#c9a84c', 3);
+
+  var qr = makeQRCanvas(code, qrSize);
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(qr, px + 35, py + 35, qrSize, qrSize);
+  ctx.imageSmoothingEnabled = true;
+
+  y += qrH;
+
+  // ===== BOTTOM: ticket code + DeepSeek credit =====
+  ctx.fillStyle = '#f5f0e6';
+  ctx.fillRect(ticketPad, y, ticketW, bottomH);
+
+  // Ticket code
+  drawTicketCode(ctx, ticketPad + 60, y + 40, ticketW - 120, code, '#1a1a1a');
+
+  // DeepSeek credit
+  ctx.fillStyle = '#b0a080';
+  ctx.font = '500 20px "DM Sans",sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText('Powered by DeepSeek', ticketPad + ticketW - 36, y + bottomH - 32);
+
+  canvasToFile(out, (movie || '取票码').replace(/[\\/:*?"<>|]/g, '_') + '_取票码.png');
+  }catch(e){
+    console.error(e);
+    alert('保存失败：'+(e&&e.message?e.message:'请刷新页面后重试'));
+  }
+}
+
+// ---- Reset ----
+function resetAll(){
+  document.getElementById('result').classList.remove('on');
+  document.getElementById('hdiv').style.display='none';
+  document.getElementById('qrc').innerHTML='';
+  document.getElementById('save-output').classList.remove('on');
+  document.getElementById('smart-input').value='';
+  document.getElementById('parse-box').classList.remove('on');
+  ['m-movie','m-cinema','m-time','m-seat','m-code'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('m-err').classList.remove('on');
+  curCode=''; window.scrollTo({top:0,behavior:'smooth'});
+}
+</script>
+</body>
+</html>
