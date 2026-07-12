@@ -221,10 +221,15 @@
     padding:var(--s5) var(--s6);display:flex;flex-direction:column;gap:var(--s1);position:relative}
   .t-head::before{content:'';position:absolute;left:16px;top:24px;bottom:24px;width:3px;
     background:#c9a84c;border-radius:2px;opacity:.85}
-  .t-head::after{content:'CINEMA\APASS';position:absolute;right:22px;top:20px;
-    font-size:11px;font-weight:700;color:rgba(201,168,76,.45);letter-spacing:.2em;
-    line-height:1.7;text-align:center;white-space:pre}
-  .t-movie{font-size:var(--lg);font-weight:700;color:#fff;letter-spacing:-.02em;line-height:1.25;padding-left:14px}
+  .t-stamp{position:absolute;right:16px;top:50%;transform:translateY(-50%) rotate(-8deg);
+    width:70px;height:70px;border:2px solid rgba(201,168,76,.5);border-radius:50%;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    font-family:'DM Sans',sans-serif;font-size:10px;font-weight:600;
+    color:rgba(201,168,76,.55);letter-spacing:.16em;line-height:1.5;text-align:center;
+    pointer-events:none}
+  .t-stamp::before{content:'';position:absolute;inset:4px;border:1px solid rgba(201,168,76,.5);border-radius:50%}
+  .t-stamp .st{font-size:6px;line-height:1.4}
+  .t-movie{font-size:var(--lg);font-weight:700;color:#fff;letter-spacing:-.02em;line-height:1.25;padding-left:14px;padding-right:86px}
   .t-cinema{font-size:var(--xs);color:#a08040;padding-left:14px}
   .t-meta{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #e0d8cc;background:#f5f0e6}
   .t-mi{padding:var(--s4) var(--s5);border-right:1px solid #ddd5c8;display:flex;flex-direction:column;gap:var(--s1)}
@@ -260,14 +265,18 @@
   .t-bottom::before{content:'';position:absolute;left:0;right:0;top:-5px;height:10px;
     background:radial-gradient(circle at center,transparent 4px,#f5f0e6 5px);
     background-size:16px 10px;background-repeat:repeat-x;z-index:3;pointer-events:none}
+  .code-label{font-size:10px;font-weight:600;color:#a3947c;letter-spacing:.35em;
+    font-family:'DM Sans','Noto Sans SC',sans-serif;text-align:center}
   .ticket-code{max-width:100%;display:flex;align-items:center;justify-content:center;gap:3px;row-gap:6px;flex-wrap:wrap;
-    padding:9px 14px;background:#f3eee4;border-radius:16px;color:#1a1a1a;
-    box-shadow:inset 0 0 0 1px rgba(184,151,74,.08);overflow:hidden}
+    padding:4px 8px;color:#2e2822;overflow:hidden}
   .dot-digit{display:grid;grid-template-columns:repeat(5,2.5px);grid-template-rows:repeat(7,2.5px);gap:2px;flex:0 0 auto}
   .dot-cell{width:2.5px;height:2.5px;border-radius:50%;background:transparent}
-  .dot-cell.on{background:#1a1a1a}
+  .dot-cell.on{background:#2e2822}
   .dot-fallback{font-family:"Courier New","DM Sans",monospace;font-size:28px;font-weight:700;letter-spacing:.12em;line-height:1}
-  .t-credit{font-size:10px;color:#b0a080;letter-spacing:.1em;font-weight:500;align-self:flex-end;margin-top:6px;margin-right:4px}
+  .t-stub{width:100%;display:flex;justify-content:space-between;margin-top:2px;
+    font-family:'DM Sans','Noto Sans SC',sans-serif;font-size:10px;font-weight:600;
+    color:#b0a080;letter-spacing:.14em}
+  .t-credit{font-size:10px;color:var(--txf);letter-spacing:.1em;font-weight:500;text-align:center}
   .acts{display:flex;gap:var(--s3);width:100%}
   .abtn{flex:1;padding:var(--s3) var(--s4);font-family:var(--fn);font-size:var(--sm);font-weight:500;
     color:var(--pri);background:linear-gradient(180deg,color-mix(in oklab,var(--prilo) 88%,var(--goldlo)),var(--prilo));border:none;border-radius:var(--r2);cursor:pointer;
@@ -385,10 +394,11 @@
         <div class="t-head">
           <div class="t-movie" id="r-movie"></div>
           <div class="t-cinema" id="r-cinema"></div>
+          <div class="t-stamp"><span class="st">★</span><span>CINEMA</span><span>PASS</span><span class="st">★</span></div>
         </div>
         <div class="t-meta" id="t-meta">
-          <div class="t-mi"><div class="mlabel">场次时间</div><div class="mval" id="r-time"></div></div>
-          <div class="t-mi"><div class="mlabel">座位</div><div class="mval" id="r-seat"></div></div>
+          <div class="t-mi"><div class="mlabel">Date &amp; Time</div><div class="mval" id="r-time"></div></div>
+          <div class="t-mi"><div class="mlabel">Seat No.</div><div class="mval" id="r-seat"></div></div>
         </div>
         <div class="perf">
           <div class="perf-c"></div><div class="perf-l"></div>
@@ -404,10 +414,12 @@
           <div id="qrc"></div>
         </div>
         <div class="t-bottom">
+          <div class="code-label">取票码 TICKET CODE</div>
           <div class="ticket-code" id="r-code"></div>
-          <div class="t-credit">Powered by DeepSeek</div>
+          <div class="t-stub"><span id="r-issued"></span><span>ADMIT ONE</span></div>
         </div>
       </div>
+      <div class="t-credit">Powered by DeepSeek</div>
       <div class="acts">
         <button class="abtn" onclick="saveTicket()">保存到相册</button>
         <button class="abtn" onclick="resetAll()">↩ 重新生成</button>
@@ -625,6 +637,9 @@ function renderTicket(movie,cinema,time,seat,code){
   document.getElementById('r-time').textContent=time||'—';
   document.getElementById('r-seat').textContent=seat||'—';
   renderDotCode(code);
+  var issued=new Date();
+  document.getElementById('r-issued').textContent='签发 '+issued.getFullYear()+'-'
+    +String(issued.getMonth()+1).padStart(2,'0')+'-'+String(issued.getDate()).padStart(2,'0');
   document.getElementById('t-meta').style.display=(time||seat)?'':'none';
   document.getElementById('qrc').innerHTML='';
   new QRCode(document.getElementById('qrc'),{text:code,width:210,height:210,
@@ -870,7 +885,7 @@ function measureDotCode(text, dot, gap, digitGap) {
 function drawTicketCode(ctx, x, y, maxW, text, color) {
   text = String(text || '');
   var dot = 5, gap = 3.5, digitGap = 8;
-  while (measureDotCode(text, dot, gap, digitGap) > maxW - 60 && dot > 2.5) {
+  while (measureDotCode(text, dot, gap, digitGap) > maxW && dot > 2.5) {
     dot -= 0.25;
     gap = Math.max(1.8, gap - .15);
     digitGap = Math.max(3.5, digitGap - .4);
@@ -878,16 +893,8 @@ function drawTicketCode(ctx, x, y, maxW, text, color) {
   var codeW = measureDotCode(text, dot, gap, digitGap);
   var codeH = 7 * dot + 6 * gap;
   var startX = x + (maxW - codeW) / 2;
-  var plateW = Math.min(maxW, codeW + 120);
-  var plateX = x + (maxW - plateW) / 2;
 
   ctx.save();
-  drawRoundRect(ctx, plateX, y - 22, plateW, codeH + 44, 18);
-  ctx.fillStyle = '#2e2822';
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(201,168,76,0.35)';
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
   ctx.fillStyle = color;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
@@ -950,7 +957,7 @@ async function saveTicket() {
   var qrSize = 470;
   var qrPlate = qrSize + 120;
   var qrH = qrPlate + 152;
-  var bottomH = 280;
+  var bottomH = 260;
   var ticketH = headH + infoH + perfH + qrH + bottomH;
   var ticketY = 100;
   var H = ticketH + ticketY * 2;
@@ -1188,7 +1195,7 @@ async function saveTicket() {
   ctx.fillText('取票码 TICKET CODE', ticketPad + ticketW / 2, y + 54);
   ctx.letterSpacing = '0px';
 
-  drawTicketCode(ctx, ticketPad + 60, y + 110, ticketW - 120, code, '#f0e2c0');
+  drawTicketCode(ctx, ticketPad + 60, y + 100, ticketW - 120, code, '#2e2822');
 
   var issued = new Date();
   var ds = issued.getFullYear() + '-' + String(issued.getMonth() + 1).padStart(2, '0') + '-' + String(issued.getDate()).padStart(2, '0');
@@ -1196,9 +1203,9 @@ async function saveTicket() {
   ctx.font = '600 17px "DM Sans","Noto Sans SC",sans-serif';
   ctx.letterSpacing = '2px';
   ctx.textAlign = 'left';
-  ctx.fillText('签发 ' + ds, ticketPad + 62, y + 238);
+  ctx.fillText('签发 ' + ds, ticketPad + 62, y + 218);
   ctx.textAlign = 'right';
-  ctx.fillText('ADMIT ONE', ticketPad + ticketW - 62, y + 238);
+  ctx.fillText('ADMIT ONE', ticketPad + ticketW - 62, y + 218);
   ctx.letterSpacing = '0px';
 
   // DeepSeek credit on the mat, outside the ticket
