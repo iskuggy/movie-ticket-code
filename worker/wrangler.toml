@@ -5,3 +5,10 @@ compatibility_date = "2026-05-03"
 [vars]
 ALLOWED_ORIGIN = "https://iskuggy.github.io"
 DEEPSEEK_MODEL = "deepseek-v4-flash"
+
+[[ratelimits]]
+name = "RATE_LIMITER"
+namespace_id = "1001"
+[ratelimits.simple]
+limit = 10
+period = 60

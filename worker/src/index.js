@@ -1,14 +1,32 @@
 const DEEPSEEK_URL = 'https://api.deepseek.com/v1/chat/completions';
 
+// In-memory sliding window per isolate; the RATE_LIMITER binding below is a
+// second layer (per-colo, eventually consistent, may not fire on small bursts).
+const RL_LIMIT = 10;
+const RL_WINDOW_MS = 60000;
+const rlBuckets = new Map();
+
+function isRateLimited(ip) {
+  const now = Date.now();
+  let hits = rlBuckets.get(ip);
+  if (!hits) {
+    if (rlBuckets.size > 10000) rlBuckets.clear();
+    hits = [];
+    rlBuckets.set(ip, hits);
+  }
+  while (hits.length && now - hits[0] > RL_WINDOW_MS) hits.shift();
+  if (hits.length >= RL_LIMIT) return true;
+  hits.push(now);
+  return false;
+}
+
 function corsHeaders(origin, env) {
   const allowed = env.ALLOWED_ORIGIN || 'https://iskuggy.github.io';
-  const allowOrigin = origin === allowed || origin === 'null' ? origin : allowed;
   return {
-    'Access-Control-Allow-Origin': allowOrigin,
+    'Access-Control-Allow-Origin': allowed,
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Max-Age': '86400',
-    'Vary': 'Origin'
+    'Access-Control-Max-Age': '86400'
   };
 }
 
@@ -57,6 +75,17 @@ export default {
 
     if (request.method !== 'POST' || url.pathname !== '/parse') {
       return jsonResponse({ error: 'Not found' }, 404, origin, env);
+    }
+
+    const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+    if (isRateLimited(ip)) {
+      return jsonResponse({ error: 'Too many requests, please retry later' }, 429, origin, env);
+    }
+    if (env.RATE_LIMITER) {
+      const { success } = await env.RATE_LIMITER.limit({ key: ip });
+      if (!success) {
+        return jsonResponse({ error: 'Too many requests, please retry later' }, 429, origin, env);
+      }
     }
 
     if (!env.DEEPSEEK_API_KEY) {
