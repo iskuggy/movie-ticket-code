@@ -819,6 +819,28 @@ function drawCornerMarks(ctx, x, y, w, h, len, color, lw) {
   ctx.restore();
 }
 
+function drawStamp(ctx, cx, cy, r, color) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(-8 * Math.PI / 180);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(0, 0, r - 9, 0, Math.PI * 2); ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.textAlign = 'center';
+  ctx.font = '600 20px "DM Sans",sans-serif';
+  ctx.letterSpacing = '3px';
+  ctx.fillText('CINEMA', 2, -6);
+  ctx.fillText('PASS', 2, 22);
+  ctx.letterSpacing = '0px';
+  ctx.font = '600 13px "DM Sans",sans-serif';
+  ctx.fillText('★', 0, -32);
+  ctx.fillText('★', 0, 46);
+  ctx.restore();
+}
+
 function drawDashedLine(ctx, x1, y1, x2, y2, dash, gap, color, lw) {
   var dx = x2 - x1, dy = y2 - y1;
   var dist = Math.sqrt(dx * dx + dy * dy);
@@ -848,20 +870,22 @@ function measureDotCode(text, dot, gap, digitGap) {
 function drawTicketCode(ctx, x, y, maxW, text, color) {
   text = String(text || '');
   var dot = 5, gap = 3.5, digitGap = 8;
-  while (measureDotCode(text, dot, gap, digitGap) > maxW && dot > 5) {
-    dot -= 1;
-    gap = Math.max(4, gap - .6);
-    digitGap = Math.max(8, digitGap - 1);
+  while (measureDotCode(text, dot, gap, digitGap) > maxW - 60 && dot > 2.5) {
+    dot -= 0.25;
+    gap = Math.max(1.8, gap - .15);
+    digitGap = Math.max(3.5, digitGap - .4);
   }
   var codeW = measureDotCode(text, dot, gap, digitGap);
   var codeH = 7 * dot + 6 * gap;
   var startX = x + (maxW - codeW) / 2;
+  var plateW = Math.min(maxW, codeW + 120);
+  var plateX = x + (maxW - plateW) / 2;
 
   ctx.save();
-  drawRoundRect(ctx, x, y - 22, maxW, codeH + 44, 36);
-  ctx.fillStyle = '#f3eee4';
+  drawRoundRect(ctx, plateX, y - 22, plateW, codeH + 44, 18);
+  ctx.fillStyle = '#2e2822';
   ctx.fill();
-  ctx.strokeStyle = 'rgba(184,151,74,0.08)';
+  ctx.strokeStyle = 'rgba(201,168,76,0.35)';
   ctx.lineWidth = 1.5;
   ctx.stroke();
   ctx.fillStyle = color;
@@ -900,6 +924,13 @@ async function saveTicket() {
   var seat = document.getElementById('r-seat').textContent;
   var hasT = time && time !== '—', hasS = seat && seat !== '—';
 
+  try {
+    await Promise.all([
+      '700 62px "Noto Sans SC"', '400 26px "Noto Sans SC"', '700 34px "Noto Sans SC"',
+      '500 26px "Noto Sans SC"', '600 18px "DM Sans"', '500 20px "DM Sans"'
+    ].map(function(f) { return document.fonts.load(f); }));
+  } catch (fontErr) {}
+
   var W = 1242;
   var ticketPad = 100;
   var ticketW = W - ticketPad * 2;
@@ -908,18 +939,18 @@ async function saveTicket() {
   var perfR = 5.5, perfGap = 9;
 
   var tmp = document.createElement('canvas'), tctx = tmp.getContext('2d');
-  tctx.font = '800 62px "Noto Sans SC",sans-serif';
-  var movieLines = wrapText(tctx, movie, ticketW - pad * 2, 2);
+  tctx.font = '700 62px "Noto Sans SC",sans-serif';
+  var movieLines = wrapText(tctx, movie, ticketW - pad * 2 - 190, 2);
   tctx.font = '400 26px "Noto Sans SC",sans-serif';
-  var cinemaLines = cinema ? wrapText(tctx, cinema, ticketW - pad * 2, 2) : [];
+  var cinemaLines = cinema ? wrapText(tctx, cinema, ticketW - pad * 2 - 190, 2) : [];
   var headH = 130 + movieLines.length * 76 + (cinemaLines.length ? cinemaLines.length * 38 + 16 : 0);
 
   var infoH = (hasT || hasS) ? 185 : 0;
   var perfH = 85;
   var qrSize = 470;
-  var qrPlate = qrSize + 70;
-  var qrH = qrPlate + 185;
-  var bottomH = 190;
+  var qrPlate = qrSize + 120;
+  var qrH = qrPlate + 152;
+  var bottomH = 280;
   var ticketH = headH + infoH + perfH + qrH + bottomH;
   var ticketY = 100;
   var H = ticketH + ticketY * 2;
@@ -1020,7 +1051,7 @@ async function saveTicket() {
 
   // Movie title
   ctx.fillStyle = '#ffffff';
-  ctx.font = '800 62px "Noto Sans SC",sans-serif';
+  ctx.font = '700 62px "Noto Sans SC",sans-serif';
   ctx.textAlign = 'left';
   var ty = y + 92;
   movieLines.forEach(function(line) {
@@ -1039,13 +1070,8 @@ async function saveTicket() {
     });
   }
 
-  // CINEMA PASS mark
-  ctx.fillStyle = 'rgba(201,168,76,0.45)';
-  ctx.font = '700 22px "DM Sans",sans-serif';
-  ctx.textAlign = 'center';
-  ctx.letterSpacing = '0px';
-  ctx.fillText('CINEMA', ticketPad + ticketW - 110, y + 52);
-  ctx.fillText('PASS', ticketPad + ticketW - 110, y + 88);
+  // CINEMA PASS stamp
+  drawStamp(ctx, ticketPad + ticketW - 148, y + 100, 72, 'rgba(201,168,76,0.5)');
 
   y += headH;
 
@@ -1078,14 +1104,16 @@ async function saveTicket() {
       var colW = items.length === 1 ? ticketW - pad * 2 : ticketW / 2 - pad * 1.5;
       var ix = items.length === 1 ? ticketPad + pad : (i === 0 ? ticketPad + pad : ticketPad + ticketW / 2 + pad / 2);
 
-      ctx.fillStyle = '#b0a080';
-      ctx.font = '600 13px "DM Sans",sans-serif';
+      ctx.fillStyle = '#a3947c';
+      ctx.font = '600 18px "DM Sans",sans-serif';
       ctx.textAlign = 'left';
-      ctx.fillText(item.l, ix, y + 50);
+      ctx.letterSpacing = '4px';
+      ctx.fillText(item.l, ix, y + 54);
+      ctx.letterSpacing = '0px';
 
       ctx.fillStyle = '#1a1a1a';
       ctx.font = '700 34px "Noto Sans SC",sans-serif';
-      ctx.fillText(ellipsize(ctx, item.v, colW), ix, y + 100);
+      ctx.fillText(ellipsize(ctx, item.v, colW), ix, y + 104);
     });
 
     y += infoH;
@@ -1108,7 +1136,7 @@ async function saveTicket() {
   ctx.strokeStyle = 'rgba(201,168,76,0.18)'; ctx.lineWidth = 1; ctx.stroke();
 
   ctx.fillStyle = '#8a7d6b';
-  ctx.font = '700 10px "DM Sans",sans-serif';
+  ctx.font = '600 11px "DM Sans",sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText('CODE', ticketPad + ticketW / 2, dashY + 4);
 
@@ -1118,13 +1146,13 @@ async function saveTicket() {
   ctx.fillStyle = '#faf6ef';
   ctx.fillRect(ticketPad, y, ticketW, qrH);
 
-  ctx.fillStyle = '#9a9080';
-  ctx.font = '500 20px "Noto Sans SC",sans-serif';
+  ctx.fillStyle = '#857763';
+  ctx.font = '500 26px "Noto Sans SC",sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('请对准取票机扫描', ticketPad + ticketW / 2, y + 48);
+  ctx.fillText('请对准取票机扫描', ticketPad + ticketW / 2, y + 56);
 
   var px = ticketPad + ticketW / 2 - qrPlate / 2;
-  var py = y + 76;
+  var py = y + 88;
 
   ctx.save();
   ctx.shadowColor = 'rgba(0,0,0,0.05)';
@@ -1144,23 +1172,40 @@ async function saveTicket() {
 
   var qr = makeQRCanvas(code, qrSize);
   ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(qr, px + 35, py + 35, qrSize, qrSize);
+  ctx.drawImage(qr, px + 60, py + 60, qrSize, qrSize);
   ctx.imageSmoothingEnabled = true;
 
   y += qrH;
 
-  // ===== BOTTOM: ticket code + DeepSeek credit =====
+  // ===== BOTTOM: ticket code =====
   ctx.fillStyle = '#f5f0e6';
   ctx.fillRect(ticketPad, y, ticketW, bottomH);
 
-  // Ticket code
-  drawTicketCode(ctx, ticketPad + 60, y + 40, ticketW - 120, code, '#1a1a1a');
+  ctx.fillStyle = '#a3947c';
+  ctx.font = '600 18px "DM Sans","Noto Sans SC",sans-serif';
+  ctx.textAlign = 'center';
+  ctx.letterSpacing = '5px';
+  ctx.fillText('取票码 TICKET CODE', ticketPad + ticketW / 2, y + 54);
+  ctx.letterSpacing = '0px';
 
-  // DeepSeek credit
+  drawTicketCode(ctx, ticketPad + 60, y + 110, ticketW - 120, code, '#f0e2c0');
+
+  var issued = new Date();
+  var ds = issued.getFullYear() + '-' + String(issued.getMonth() + 1).padStart(2, '0') + '-' + String(issued.getDate()).padStart(2, '0');
   ctx.fillStyle = '#b0a080';
-  ctx.font = '500 20px "DM Sans",sans-serif';
+  ctx.font = '600 17px "DM Sans","Noto Sans SC",sans-serif';
+  ctx.letterSpacing = '2px';
+  ctx.textAlign = 'left';
+  ctx.fillText('签发 ' + ds, ticketPad + 62, y + 238);
   ctx.textAlign = 'right';
-  ctx.fillText('Powered by DeepSeek', ticketPad + ticketW - 36, y + bottomH - 32);
+  ctx.fillText('ADMIT ONE', ticketPad + ticketW - 62, y + 238);
+  ctx.letterSpacing = '0px';
+
+  // DeepSeek credit on the mat, outside the ticket
+  ctx.fillStyle = '#a89a86';
+  ctx.font = '500 20px "DM Sans",sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Powered by DeepSeek', W / 2, ticketY + ticketH + 62);
 
   await canvasToFile(out, (movie || '取票码').replace(/[\\/:*?"<>|]/g, '_') + '_取票码.png');
   }catch(e){
