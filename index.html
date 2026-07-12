@@ -515,6 +515,12 @@ async function parseWithAI(text){
 }
 
 // ---- Smart Generate ----
+function escHTML(s){
+  return String(s).replace(/[&<>"']/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+
 async function smartGen(){
   var text=document.getElementById('smart-input').value.trim();
   if(!text){alert('请先粘贴订单通知文本');return;}
@@ -550,7 +556,7 @@ async function smartGen(){
   fl.innerHTML=rows.map(function(r){
     var ok=r.v?'<span class="bok">✓</span>':'<span class="bwarn">未识别</span>';
     return '<div class="pfield"><div class="pkey">'+r.k+'</div>'
-      +'<div class="pval'+(r.v?'':' miss')+'">'+(r.v||'未识别')+ok+'</div></div>';
+      +'<div class="pval'+(r.v?'':' miss')+'">'+(r.v?escHTML(r.v):'未识别')+ok+'</div></div>';
   }).join('');
 
   if(!d.code){alert('未能识别取票码，请切换到「手动填写」模式');return;}
